@@ -1,11 +1,11 @@
 import { format } from "date-fns";
 import { Inject, Service } from "typedi";
-import ICommandHandler from "../../../common/interfaces/cqrs/command.interface";
-import CreateUserCommand from "../domain/commands/create-user.command";
-import UserFactories from "../domain/factories/user.factory";
-import { UserType } from "../drizzle/schema";
-import { UserDrizzleRepo } from "../drizzle/user/user.repository";
-import { FORMAT_DATE_TIME } from "../../../common/settings/format-date-time";
+import ICommandHandler from "../../../../common/interfaces/cqrs/command.interface";
+import CreateUserCommand from "../../domain/commands/users/create-user.command";
+import UserFactories from "../../domain/factories/user.factory";
+import { UserType } from "../../drizzle/schema";
+import { UserDrizzleRepo } from "../../drizzle/user/user.repository";
+import { FORMAT_DATE_TIME } from "../../../../common/settings/format-date-time";
 
 @Service()
 export default class CreateUserCase

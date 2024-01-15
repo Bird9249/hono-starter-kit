@@ -7,7 +7,6 @@ export default class Password {
       throw new Error(`ລະຫັດຜ່ານຕ້ອງມີຄວາມຍາວຢ່າງໜ້ອຍ ${minPasswordLength} ຕົວອັກສອນ`)
     }
 
-    // this.value = hashSync(password, genSaltSync(10))
     this.value = password
   }
 

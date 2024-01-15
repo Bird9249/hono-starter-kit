@@ -1,26 +1,32 @@
-import { zValidator } from "@hono/zod-validator";
 import { format } from "date-fns";
 import { Hono } from "hono";
+import { validator } from "hono/validator";
 import { Inject, Service } from "typedi";
 import { FORMAT_DATE_TIME } from "../../common/settings/format-date-time";
 import zodException from "../../common/utils/zod-exception";
 import PaginateSchema from "../../common/zod-schema/paginate.schema";
 import paramIdSchema from "../../common/zod-schema/param-id.schema";
-import CreateUserCommand from "./domain/commands/create-user.command";
-import DeleteUserCommand from "./domain/commands/delete-user.command";
-import RestoreUserCommand from "./domain/commands/restore-user.command";
-import UpdateUserCommand from "./domain/commands/update-user.command";
-import { CreateUserDto } from "./domain/dtos/create-user.dto";
-import { UpdateUserDto } from "./domain/dtos/update-user.dto";
+import CreateUserCommand from "./domain/commands/users/create-user.command";
+import DeleteUserCommand from "./domain/commands/users/delete-user.command";
+import RestoreUserCommand from "./domain/commands/users/restore-user.command";
+import UpdateUserCommand from "./domain/commands/users/update-user.command";
+import {
+  CreateUserDto,
+  CreateUserDtoType,
+} from "./domain/dtos/users/create-user.dto";
+import {
+  UpdateUserDto,
+  UpdateUserDtoType,
+} from "./domain/dtos/users/update-user.dto";
 import User from "./domain/entities/user.entity";
-import GetUserByIdQuery from "./domain/queries/get-user-by-id.query";
-import GetUserQuery from "./domain/queries/get-user.query";
+import GetUserByIdQuery from "./domain/queries/users/get-user-by-id.query";
+import GetUserQuery from "./domain/queries/users/get-user.query";
 import { GetUserByIdDrizzleRepo } from "./drizzle/user/get-user-by-id.repository";
 import { GetUserDrizzleRepo } from "./drizzle/user/get-user.repository";
-import CreateUserCase from "./use-cases/create-user.case";
-import DeleteUserCase from "./use-cases/delete-user.case";
-import RestoreUserCase from "./use-cases/restore-user.case";
-import UpdateUserCase from "./use-cases/update-user.case";
+import CreateUserCase from "./use-cases/users/create-user.case";
+import DeleteUserCase from "./use-cases/users/delete-user.case";
+import RestoreUserCase from "./use-cases/users/restore-user.case";
+import UpdateUserCase from "./use-cases/users/update-user.case";
 
 @Service()
 export default class UserRouter {
@@ -78,13 +84,9 @@ export default class UserRouter {
   private _createNew() {
     this.router.post(
       "/",
-      zValidator("json", CreateUserDto, (result, { json }) => {
-        if (!result.success) {
-          return json(result.error.formErrors, 400);
-        }
-      }),
+      validator("json", (result) => zodException(CreateUserDto, result)),
       async ({ req, json }) => {
-        const body = req.valid("json");
+        const body = req.valid("json") as CreateUserDtoType;
 
         const result = await this._createUserCase.execute(
           new CreateUserCommand(body)
@@ -98,9 +100,7 @@ export default class UserRouter {
   private _getById() {
     this.router.get(
       "/:id",
-      zValidator("param", paramIdSchema, (result, c) =>
-        zodException(result, c)
-      ),
+      validator("param", (result) => zodException(paramIdSchema, result)),
       async ({ req, json }) => {
         const { id } = req.valid("param");
 
@@ -127,12 +127,10 @@ export default class UserRouter {
   private _update() {
     this.router.put(
       "/:id",
-      zValidator("param", paramIdSchema, (result, c) =>
-        zodException(result, c)
-      ),
-      zValidator("json", UpdateUserDto, (result, c) => zodException(result, c)),
+      validator("param", (result) => zodException(paramIdSchema, result)),
+      validator("json", (result) => zodException(UpdateUserDto, result)),
       async ({ req, json }) => {
-        const body = req.valid("json");
+        const body = req.valid("json") as UpdateUserDtoType;
         const param = req.valid("param");
 
         const result = await this._updateUserCase.execute(
@@ -147,9 +145,7 @@ export default class UserRouter {
   private _delete() {
     this.router.delete(
       "/:id",
-      zValidator("param", paramIdSchema, (result, c) =>
-        zodException(result, c)
-      ),
+      validator("param", (result) => zodException(paramIdSchema, result)),
       async ({ req, json }) => {
         const { id } = req.valid("param");
 
@@ -165,9 +161,7 @@ export default class UserRouter {
   private _restore() {
     this.router.patch(
       "/:id/restore",
-      zValidator("param", paramIdSchema, (result, c) =>
-        zodException(result, c)
-      ),
+      validator("param", (result) => zodException(paramIdSchema, result)),
       async ({ req, json }) => {
         const { id } = req.valid("param");
 
