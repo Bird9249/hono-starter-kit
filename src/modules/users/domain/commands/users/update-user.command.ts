@@ -1,4 +1,4 @@
-import { UpdateUserDtoType } from "../dtos/update-user.dto";
+import { UpdateUserDtoType } from "../../dtos/users/update-user.dto";
 
 export default class UpdateUserCommand {
   constructor(

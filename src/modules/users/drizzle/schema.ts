@@ -1,4 +1,12 @@
-import { pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import {
+  char,
+  integer,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey().notNull(),
@@ -14,12 +22,22 @@ export const users = pgTable("users", {
   deleted_at: timestamp("deleted_at", { withTimezone: true, mode: "string" }),
 });
 
-interface User
+export interface UserType
   extends Omit<typeof users.$inferSelect, "password" | "deleted_at"> {
   password?: string;
   deleted_at?: string;
 }
-
-export type UserType = User;
-
 export type InsertUserType = typeof users.$inferInsert;
+
+export const sessions = pgTable("sessions", {
+  id: char("id", { length: 36 }).unique().primaryKey().notNull(),
+  user_id: integer("user_id")
+    .references(() => users.id)
+    .notNull(),
+  created_at: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .defaultNow()
+    .notNull(),
+});
+
+export type SessionType = typeof sessions.$inferSelect;
+export type InsertSessionType = typeof sessions.$inferInsert;

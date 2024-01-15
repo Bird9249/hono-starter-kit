@@ -2,7 +2,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { Inject, Service } from "typedi";
 import DrizzleConnection from "../../../../infrastructure/drizzle/connection";
 import User from "../../domain/entities/user.entity";
-import { IUserRepository } from "../../domain/repositories/user.interface";
+import { IUserRepository } from "../../domain/repositories/users/user.interface";
 import { UserMapper } from "../mappers/user.mapper";
 import { UserType, users } from "../schema";
 

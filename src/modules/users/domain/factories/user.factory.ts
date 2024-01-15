@@ -1,8 +1,8 @@
 import { password } from "bun";
 import Timestamp from "../../../../common/value-object/timestemp.vo";
 import { UserType } from "../../drizzle/schema";
-import { CreateUserDtoType } from "../dtos/create-user.dto";
-import { UpdateUserDtoType } from "../dtos/update-user.dto";
+import { CreateUserDtoType } from "../dtos/users/create-user.dto";
+import { UpdateUserDtoType } from "../dtos/users/update-user.dto";
 import User from "../entities/user.entity";
 import Email from "../entities/value-object/email.vo";
 import Password from "../entities/value-object/password.vo";

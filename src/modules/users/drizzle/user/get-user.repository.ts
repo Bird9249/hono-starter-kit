@@ -2,8 +2,8 @@ import { asc, count, desc, isNull } from "drizzle-orm";
 import { Inject, Service } from "typedi";
 import { IPaginated } from "../../../../common/interfaces/pagination/paginated.interface";
 import DrizzleConnection from "../../../../infrastructure/drizzle/connection";
-import GetUserQuery from "../../domain/queries/get-user.query";
-import IGetUserRepository from "../../domain/repositories/get-user.interface";
+import GetUserQuery from "../../domain/queries/users/get-user.query";
+import IGetUserRepository from "../../domain/repositories/users/get-user.interface";
 import { UserType, users } from "../schema";
 
 @Service()

@@ -1,8 +1,8 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { Inject, Service } from "typedi";
 import DrizzleConnection from "../../../../infrastructure/drizzle/connection";
-import GetUserByIdQuery from "../../domain/queries/get-user-by-id.query";
-import IGetUserByIdRepository from "../../domain/repositories/get-user-by-id.interface";
+import GetUserByIdQuery from "../../domain/queries/users/get-user-by-id.query";
+import IGetUserByIdRepository from "../../domain/repositories/users/get-user-by-id.interface";
 import { UserType, users } from "../schema";
 
 @Service()

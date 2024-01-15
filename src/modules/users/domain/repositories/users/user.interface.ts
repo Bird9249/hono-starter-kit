@@ -1,5 +1,5 @@
-import { UserType } from "../../drizzle/schema";
-import User from "../entities/user.entity";
+import { UserType } from "../../../drizzle/schema";
+import User from "../../entities/user.entity";
 
 export interface IUserRepository {
   create(entity: User): Promise<UserType>;
