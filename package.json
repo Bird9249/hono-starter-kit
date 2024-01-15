@@ -9,7 +9,6 @@
     "push": "drizzle-kit push:pg"
   },
   "dependencies": {
-    "@hono/zod-validator": "^0.1.11",
     "date-fns": "^3.0.6",
     "drizzle-orm": "^0.29.3",
     "hono": "^3.11.12",
