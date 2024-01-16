@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import "reflect-metadata";
 import Container from "typedi";
-
 import { HTTPException, ValidationFailed } from "./common/exception/http";
 import AuthRouter from "./modules/users/auth.router";
+import RoleRouter from "./modules/users/role.router";
 import UserRouter from "./modules/users/user.router";
 
 class Application {
@@ -12,10 +12,12 @@ class Application {
   constructor() {
     const userRouter = Container.get(UserRouter);
     const authRouter = Container.get(AuthRouter);
+    const roleRouter = Container.get(RoleRouter);
 
     this.hono
       .route("/users", userRouter.router)
       .route("/auth", authRouter.router)
+      .route("/roles", roleRouter.router)
       .onError((err, { json }) => {
         if (err instanceof ValidationFailed)
           return json({ message: err.message, error: err.error }, err.status);
@@ -32,10 +34,7 @@ class Application {
           {
             message: "Internal Server Error!",
             error: {
-              name: err.name,
-              message: err.message,
-              cause: err.cause,
-              stack: err.stack,
+              ...err,
             },
           },
           500

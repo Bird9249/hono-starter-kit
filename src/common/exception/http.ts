@@ -28,6 +28,12 @@ export class NotFoundException extends HTTPException {
   }
 }
 
+export class UnprocessableContentException extends HTTPException {
+  constructor(message: string = "Unprocessable Content!") {
+    super(message, 422);
+  }
+}
+
 export class ValidationFailed extends BadRequestException {
   error?: typeToFlattenedError<any, string>;
 
