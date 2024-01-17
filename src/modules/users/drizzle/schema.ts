@@ -90,17 +90,12 @@ export type InsertUserType = typeof users.$inferInsert;
 export type SessionType = typeof sessions.$inferSelect;
 export type InsertSessionType = typeof sessions.$inferInsert;
 
-export interface RoleType
-  extends Omit<typeof roles.$inferSelect, "deleted_at"> {
-  deleted_at?: string;
-}
-export type InsertRoleType = typeof roles.$inferInsert;
+export type RoleSchema = typeof roles.$inferSelect;
 
 export type UserToRoleType = typeof usersToRoles.$inferSelect;
 export type InsertUserToRoleType = typeof usersToRoles.$inferInsert;
 
-export type PermissionType = typeof permissions.$inferSelect;
-export type InsertPermissionType = typeof permissions.$inferInsert;
+export type PermissionSchema = typeof permissions.$inferSelect;
 
-export type UserToPermissionType = typeof rolesToPermissions.$inferSelect;
-export type InsertUserToPermissionType = typeof rolesToPermissions.$inferInsert;
+export type RoleToPermissionType = typeof rolesToPermissions.$inferSelect;
+export type InsertRoleToPermissionType = typeof rolesToPermissions.$inferInsert;

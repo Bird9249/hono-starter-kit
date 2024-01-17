@@ -30,6 +30,8 @@ class Application {
             err.status
           );
 
+        console.log(err);
+
         return json(
           {
             message: "Internal Server Error!",

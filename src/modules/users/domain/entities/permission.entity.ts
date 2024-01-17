@@ -1,6 +1,5 @@
 import Timestamp from "../../../../common/value-object/timestemp.vo";
 import Role from "./role.entity";
-import DisplayName from "./value-object/display-name.vo";
 import Name from "./value-object/name.vo";
 
 export enum PermissionNames {
@@ -17,15 +16,15 @@ export enum PermissionSubject {
 export default class Permission {
   id!: number;
 
-  name!: Name | PermissionNames;
+  name!: Name;
 
-  display_name!: DisplayName;
+  display_name!: Name;
 
-  subject_name!: Name | PermissionSubject;
+  subject_name!: Name;
 
   subject_display_name!: Name;
 
-  roles?: Role[];
+  roles!: Role[];
 
-  created_at?: Timestamp;
+  created_at!: Timestamp;
 }

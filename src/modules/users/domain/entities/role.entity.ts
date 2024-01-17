@@ -15,9 +15,9 @@ export default class Role {
 
   permissions!: Permission[];
 
-  created_at?: Timestamp;
+  created_at!: Timestamp;
 
-  updated_at?: Timestamp;
+  updated_at!: Timestamp;
 
-  deleted_at?: Timestamp | null;
+  deleted_at!: Timestamp | null;
 }
