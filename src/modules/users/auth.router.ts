@@ -5,6 +5,7 @@ import { Inject, Service } from "typedi";
 import { UnauthorizedException } from "../../common/exception/http";
 import authMiddleware from "../../common/middlewares/auth.middleware";
 import refreshTokenMiddleware from "../../common/middlewares/refresh-token.middleware";
+import { cookieOpts } from "../../common/settings/cookie";
 import zodException from "../../common/utils/zod-exception";
 import GenerateJoseJwt from "../../infrastructure/jwt/generate-jose-jwt";
 import LoginCommand from "./domain/commands/auth/login.command";
@@ -44,14 +45,8 @@ export default class AuthRouter {
         const { access_token, refresh_token, data } =
           await this._loginCase.execute(new LoginCommand(body));
 
-        setCookie(c, "access_token", access_token, {
-          httpOnly: true,
-          path: "/",
-        });
-        setCookie(c, "refresh_token", refresh_token, {
-          httpOnly: true,
-          path: "/",
-        });
+        setCookie(c, "access_token", access_token, cookieOpts);
+        setCookie(c, "refresh_token", refresh_token, cookieOpts);
 
         return c.json(
           {
@@ -98,11 +93,13 @@ export default class AuthRouter {
 
         if (!token) throw new UnauthorizedException();
 
-        const result = await this._refreshTokenCase.execute(
-          new RefreshTokenCommand(token)
-        );
+        const { access_token, refresh_token, message } =
+          await this._refreshTokenCase.execute(new RefreshTokenCommand(token));
 
-        return c.json({ message: result }, 200);
+        setCookie(c, "access_token", access_token, cookieOpts);
+        setCookie(c, "refresh_token", refresh_token, cookieOpts);
+
+        return c.json({ message }, 200);
       });
   }
 
