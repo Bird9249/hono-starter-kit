@@ -9,4 +9,6 @@ export interface IRoleRepository {
   checkDuplicate(name: Name, id?: number): Promise<Role | void>;
 
   update(entity: Role, permissionIds?: number[]): Promise<Role>;
+
+  trash(id: number): Promise<Role | void>
 }

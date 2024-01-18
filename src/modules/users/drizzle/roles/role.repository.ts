@@ -1,4 +1,4 @@
-import { and, eq, isNull, not } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, not } from "drizzle-orm";
 import { Inject, Service } from "typedi";
 import DrizzleConnection from "../../../../infrastructure/drizzle/connection";
 import Role from "../../domain/entities/role.entity";
@@ -122,5 +122,15 @@ export class RoleDrizzleRepo implements IRoleRepository {
     });
 
     return this._mapper.toEntity(res[0]);
+  }
+
+  async trash(id: number): Promise<Role | void> {
+    const res = await this.drizzle.connection
+      .select()
+      .from(roles)
+      .where(and(isNotNull(roles.deleted_at), eq(roles.id, id)))
+      .execute();
+
+    if (res.length > 0) return this._mapper.toEntity(res[0]);
   }
 }
