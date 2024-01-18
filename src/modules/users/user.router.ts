@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 import { Inject, Service } from "typedi";
+import { ValidationFailed } from "../../common/exception/http";
 import { FORMAT_DATE_TIME } from "../../common/settings/format-date-time";
 import zodException from "../../common/utils/zod-exception";
 import PaginateSchema from "../../common/zod-schema/paginate.schema";
@@ -18,9 +19,9 @@ import {
   UpdateUserDto,
   UpdateUserDtoType,
 } from "./domain/dtos/users/update-user.dto";
-import User from "./domain/entities/user.entity";
 import GetUserByIdQuery from "./domain/queries/users/get-user-by-id.query";
 import GetUserQuery from "./domain/queries/users/get-user.query";
+import { UserSchema } from "./drizzle/schema";
 import { GetUserByIdDrizzleRepo } from "./drizzle/user/get-user-by-id.repository";
 import { GetUserDrizzleRepo } from "./drizzle/user/get-user.repository";
 import CreateUserCase from "./use-cases/users/create-user.case";
@@ -54,15 +55,13 @@ export default class UserRouter {
 
       const result = PaginateSchema.safeParse(query);
 
-      if (!result.success) {
-        return json(result.error.formErrors, 400);
-      }
+      if (!result.success) throw new ValidationFailed(result);
 
       const { data, total } = await this._getUserRepo.execute(
         new GetUserQuery({
           offset: result.data.offset as number,
           limit: result.data.limit as number,
-          column: result.data.column as keyof User,
+          column: result.data.column as keyof UserSchema,
           sort_order: result.data.sort_order,
         })
       );
@@ -71,8 +70,12 @@ export default class UserRouter {
         {
           data: data.map((data) => ({
             ...data,
-            created_at: format(data.created_at, FORMAT_DATE_TIME),
-            updated_at: format(data.updated_at, FORMAT_DATE_TIME),
+            created_at: data.created_at
+              ? format(data.created_at, FORMAT_DATE_TIME)
+              : undefined,
+            updated_at: data.updated_at
+              ? format(data.updated_at, FORMAT_DATE_TIME)
+              : undefined,
           })),
           total,
         },
@@ -92,7 +95,16 @@ export default class UserRouter {
           new CreateUserCommand(body)
         );
 
-        return json(result, 201);
+        return json(
+          {
+            id: result.id,
+            username: result.username.getValue(),
+            email: result.email.getValue(),
+            created_at: result.created_at.getValue(),
+            updated_at: result.updated_at.getValue(),
+          },
+          201
+        );
       }
     );
   }
@@ -108,15 +120,15 @@ export default class UserRouter {
           new GetUserByIdQuery(Number(id))
         );
 
-        if (!result) {
-          return json({ message: "Not Found!" }, 404);
-        }
-
         return json(
           {
             ...result,
-            created_at: format(result.created_at, FORMAT_DATE_TIME),
-            updated_at: format(result.updated_at, FORMAT_DATE_TIME),
+            created_at: result.created_at
+              ? format(result.created_at, FORMAT_DATE_TIME)
+              : undefined,
+            updated_at: result.updated_at
+              ? format(result.updated_at, FORMAT_DATE_TIME)
+              : undefined,
           },
           200
         );
@@ -137,7 +149,16 @@ export default class UserRouter {
           new UpdateUserCommand(parseInt(param.id), body)
         );
 
-        return json(result, 200);
+        return json(
+          {
+            id: result.id,
+            username: result.username.getValue(),
+            email: result.email.getValue(),
+            created_at: result.created_at.getValue(),
+            updated_at: result.updated_at.getValue(),
+          },
+          200
+        );
       }
     );
   }
@@ -153,7 +174,16 @@ export default class UserRouter {
           new DeleteUserCommand(parseInt(id))
         );
 
-        return json(result, 200);
+        return json(
+          {
+            id: result.id,
+            username: result.username.getValue(),
+            email: result.email.getValue(),
+            created_at: result.created_at.getValue(),
+            updated_at: result.updated_at.getValue(),
+          },
+          200
+        );
       }
     );
   }
@@ -169,7 +199,16 @@ export default class UserRouter {
           new RestoreUserCommand(parseInt(id))
         );
 
-        return json(result, 200);
+        return json(
+          {
+            id: result.id,
+            username: result.username.getValue(),
+            email: result.email.getValue(),
+            created_at: result.created_at.getValue(),
+            updated_at: result.updated_at.getValue(),
+          },
+          200
+        );
       }
     );
   }

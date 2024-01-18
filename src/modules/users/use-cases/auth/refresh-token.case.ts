@@ -12,7 +12,7 @@ export default class RefreshTokenCase
   implements
     ICommandHandler<
       RefreshTokenCommand,
-      { access_token: string; refresh_token: string }
+      { access_token: string; refresh_token: string; message: string }
     >
 {
   constructor(
@@ -23,6 +23,7 @@ export default class RefreshTokenCase
   async execute({ token }: RefreshTokenCommand): Promise<{
     access_token: string;
     refresh_token: string;
+    message: string;
   }> {
     const decode = this._generateJwt.decode(token);
 
@@ -46,7 +47,11 @@ export default class RefreshTokenCase
 
     await this._saveSession(Number(decode.sub), token_id);
 
-    return { access_token: accessToken, refresh_token: refreshToken };
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      message: "Refresh token successfully",
+    };
   }
 
   private async _saveSession(userId: number, id: UUID): Promise<void> {

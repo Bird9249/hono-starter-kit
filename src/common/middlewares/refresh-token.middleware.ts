@@ -1,18 +1,15 @@
 import { Context, Env, Next } from "hono";
+import { getCookie } from "hono/cookie";
 import Container from "typedi";
 import GenerateJoseJwt from "../../infrastructure/jwt/generate-jose-jwt";
 import { UnauthorizedException } from "../exception/http";
 
-export default async function ({ req }: Context<Env, string, {}>, next: Next) {
+export default async function (c: Context<Env, string, {}>, next: Next) {
   const jwt = Container.get(GenerateJoseJwt);
 
-  const header = req.header();
+  const token = getCookie(c, "refresh_token");
 
-  if (!header["authorization"]) {
-    throw new UnauthorizedException();
-  }
-
-  const token = header["authorization"].split(" ")[1];
+  if (!token) throw new UnauthorizedException();
 
   try {
     await jwt.verify(token);

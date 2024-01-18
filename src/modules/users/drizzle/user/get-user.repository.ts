@@ -4,7 +4,7 @@ import { IPaginated } from "../../../../common/interfaces/pagination/paginated.i
 import DrizzleConnection from "../../../../infrastructure/drizzle/connection";
 import GetUserQuery from "../../domain/queries/users/get-user.query";
 import IGetUserRepository from "../../domain/repositories/users/get-user.interface";
-import { UserType, users } from "../schema";
+import { UserSchema, users } from "../schema";
 
 @Service()
 export class GetUserDrizzleRepo implements IGetUserRepository {
@@ -12,7 +12,7 @@ export class GetUserDrizzleRepo implements IGetUserRepository {
 
   async execute({
     paginate: { offset, limit, column, sort_order },
-  }: GetUserQuery): Promise<IPaginated<UserType>> {
+  }: GetUserQuery): Promise<IPaginated<Partial<UserSchema>>> {
     const query = this.drizzle.connection
       .select({
         id: users.id,

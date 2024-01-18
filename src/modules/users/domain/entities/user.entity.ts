@@ -1,4 +1,5 @@
 import Timestamp from "../../../../common/value-object/timestemp.vo";
+import Role from "./role.entity";
 import Session from "./session.entity";
 import Email from "./value-object/email.vo";
 import Password from "./value-object/password.vo";
@@ -13,11 +14,13 @@ export default class User {
 
   password!: Password;
 
-  sessions?: Session[];
+  sessions!: Session[];
 
-  created_at?: Timestamp;
+  roles!: Role[];
 
-  updated_at?: Timestamp;
+  created_at!: Timestamp;
 
-  deleted_at?: Timestamp | null;
+  updated_at!: Timestamp;
+
+  deleted_at!: Timestamp | null;
 }

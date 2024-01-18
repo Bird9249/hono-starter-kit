@@ -9,5 +9,5 @@ export default class Session {
 
   user!: User;
 
-  created_at?: Timestamp;
+  created_at!: Timestamp;
 }
