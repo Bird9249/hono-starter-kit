@@ -95,7 +95,7 @@ export class RoleDrizzleRepo implements IRoleRepository {
     }
   }
 
-  async update(entity: Role, permissionIds: number[]): Promise<Role> {
+  async update(entity: Role, permissionIds?: number[]): Promise<Role> {
     const model = this._mapper.toModel(entity);
 
     const res = await this.drizzle.connection.transaction(async (tx) => {
@@ -105,19 +105,18 @@ export class RoleDrizzleRepo implements IRoleRepository {
         .where(eq(roles.id, entity.id))
         .returning();
 
-      await tx
-        .delete(rolesToPermissions)
-        .where(eq(rolesToPermissions.role_id, roleRes[0].id));
+      if (permissionIds) {
+        await tx
+          .delete(rolesToPermissions)
+          .where(eq(rolesToPermissions.role_id, roleRes[0].id));
 
-      await tx
-        .insert(rolesToPermissions)
-        .values(
+        await tx.insert(rolesToPermissions).values(
           permissionIds.map((perId) => ({
             role_id: roleRes[0].id,
             permission_id: perId,
           }))
-        )
-        .returning();
+        );
+      }
 
       return roleRes;
     });

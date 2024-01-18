@@ -8,5 +8,5 @@ export interface IRoleRepository {
 
   checkDuplicate(name: Name, id?: number): Promise<Role | void>;
 
-  update(entity: Role, permissionIds: number[]): Promise<Role>;
+  update(entity: Role, permissionIds?: number[]): Promise<Role>;
 }
