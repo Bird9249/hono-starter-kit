@@ -14,13 +14,13 @@ export default class User {
 
   password!: Password;
 
-  sessions?: Session[];
+  sessions!: Session[];
 
-  roles?: Role[];
+  roles!: Role[];
 
-  created_at?: Timestamp;
+  created_at!: Timestamp;
 
-  updated_at?: Timestamp;
+  updated_at!: Timestamp;
 
-  deleted_at?: Timestamp | null;
+  deleted_at!: Timestamp | null;
 }

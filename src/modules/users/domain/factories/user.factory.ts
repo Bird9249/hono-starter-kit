@@ -1,6 +1,5 @@
 import { password } from "bun";
 import Timestamp from "../../../../common/value-object/timestemp.vo";
-import { UserType } from "../../drizzle/schema";
 import { CreateUserDtoType } from "../dtos/users/create-user.dto";
 import { UpdateUserDtoType } from "../dtos/users/update-user.dto";
 import User from "../entities/user.entity";
@@ -19,19 +18,10 @@ export default class UserFactories {
     return newData;
   }
 
-  update(dto: UpdateUserDtoType): User {
-    const newData = new User();
-    newData.username = new Username(dto.username);
-    newData.email = new Email(dto.email);
-    newData.updated_at = new Timestamp();
-    return newData;
-  }
-
-  getOne(data: UserType): User {
-    const user = new User();
-    user.id = data.id;
-    user.username = new Username(data.username as string);
-    user.email = new Email(data.email);
-    return user;
+  update(entity: User, dto: UpdateUserDtoType): User {
+    entity.username = new Username(dto.username);
+    entity.email = new Email(dto.email);
+    entity.updated_at = new Timestamp();
+    return entity;
   }
 }

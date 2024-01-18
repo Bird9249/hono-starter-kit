@@ -1,10 +1,11 @@
-import { UserType } from "../../../drizzle/schema";
 import User from "../../entities/user.entity";
 
 export interface IUserRepository {
-  create(entity: User): Promise<UserType>;
+  create(entity: User): Promise<User>;
 
-  update(id: number, entity: User): Promise<UserType>;
+  getById(id: number): Promise<User | void>;
 
-  trash(id?: number): Promise<UserType | UserType[]>
+  update(entity: User): Promise<User>;
+
+  trash(id?: number): Promise<User | void>;
 }

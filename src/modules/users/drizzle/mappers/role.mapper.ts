@@ -26,7 +26,6 @@ export class RoleMapper {
     role.created_at = new Timestamp(model.created_at);
     role.updated_at = new Timestamp(model.updated_at);
     if (model.deleted_at) role.deleted_at = new Timestamp(model.deleted_at);
-
     return role;
   }
 }

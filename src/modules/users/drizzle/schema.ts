@@ -80,12 +80,7 @@ export const rolesToPermissions = pgTable("roles_to_permissions", {
     }),
 });
 
-export interface UserType
-  extends Omit<typeof users.$inferSelect, "password" | "deleted_at"> {
-  password?: string;
-  deleted_at?: string;
-}
-export type InsertUserType = typeof users.$inferInsert;
+export type UserSchema = typeof users.$inferSelect;
 
 export type SessionType = typeof sessions.$inferSelect;
 export type InsertSessionType = typeof sessions.$inferInsert;
