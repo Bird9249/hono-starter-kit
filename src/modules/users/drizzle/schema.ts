@@ -82,8 +82,7 @@ export const rolesToPermissions = pgTable("roles_to_permissions", {
 
 export type UserSchema = typeof users.$inferSelect;
 
-export type SessionType = typeof sessions.$inferSelect;
-export type InsertSessionType = typeof sessions.$inferInsert;
+export type SessionSchema = typeof sessions.$inferSelect;
 
 export type RoleSchema = typeof roles.$inferSelect;
 

@@ -9,21 +9,14 @@ import { AuthDrizzleRepo } from "../../drizzle/auth/auth.repository";
 
 @Service()
 export default class RefreshTokenCase
-  implements
-    ICommandHandler<
-      RefreshTokenCommand,
-      { access_token: string; refresh_token: string }
-    >
+  implements ICommandHandler<RefreshTokenCommand, string>
 {
   constructor(
     @Inject() private readonly _generateJwt: GenerateJoseJwt,
     @Inject() private readonly _repository: AuthDrizzleRepo
   ) {}
 
-  async execute({ token }: RefreshTokenCommand): Promise<{
-    access_token: string;
-    refresh_token: string;
-  }> {
+  async execute({ token }: RefreshTokenCommand): Promise<string> {
     const decode = this._generateJwt.decode(token);
 
     const token_id = UUID.generate();
@@ -46,7 +39,7 @@ export default class RefreshTokenCase
 
     await this._saveSession(Number(decode.sub), token_id);
 
-    return { access_token: accessToken, refresh_token: refreshToken };
+    return "Refresh token successfully";
   }
 
   private async _saveSession(userId: number, id: UUID): Promise<void> {
