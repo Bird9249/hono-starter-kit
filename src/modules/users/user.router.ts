@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
 import { Inject, Service } from "typedi";
+import { object, z } from "zod";
 import { ValidationFailed } from "../../common/exception/http";
 import { FORMAT_DATE_TIME } from "../../common/settings/format-date-time";
 import zodException from "../../common/utils/zod-exception";
@@ -52,8 +53,18 @@ export default class UserRouter {
   private _getAll() {
     this.router.get("/", async ({ req, json }) => {
       const query = req.query();
+      const userProperties: (keyof UserSchema)[] = [
+        "username",
+        "email",
+        "created_at",
+        "updated_at",
+      ];
 
-      const result = PaginateSchema.safeParse(query);
+      const result = PaginateSchema.merge(
+        object({
+          column: z.enum(["id", ...userProperties]).nullish(),
+        })
+      ).safeParse(query);
 
       if (!result.success) throw new ValidationFailed(result);
 
