@@ -1,14 +1,13 @@
 import Role from "../../entities/role.entity";
-import Name from "../../entities/value-object/name.vo";
 
 export interface IRoleRepository {
-  create(entity: Role, permissionIds: number[]): Promise<Role>;
+  create(entity: Role): Promise<Role>;
 
   getById(id: number): Promise<Role | void>;
 
-  checkDuplicate(name: Name, id?: number): Promise<Role | void>;
+  checkDuplicate(entity: Role): Promise<Role | void>;
 
-  update(entity: Role, permissionIds?: number[]): Promise<Role>;
+  update(entity: Role): Promise<Role>;
 
-  trash(id: number): Promise<Role | void>
+  trash(id: number): Promise<Role | void>;
 }

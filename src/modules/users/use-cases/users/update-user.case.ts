@@ -1,5 +1,8 @@
 import { Inject, Service } from "typedi";
-import { NotFoundException } from "../../../../common/exception/http";
+import {
+  NotFoundException,
+  UnprocessableContentException,
+} from "../../../../common/exception/http";
 import ICommandHandler from "../../../../common/interfaces/cqrs/command.interface";
 import UpdateUserCommand from "../../domain/commands/users/update-user.command";
 import User from "../../domain/entities/user.entity";
@@ -20,6 +23,11 @@ export default class UpdateUserCase
     }
 
     const newDate = new UserFactories().update(oldData, dto);
+
+    const existData = await this._repository.checkDuplicate(oldData);
+
+    if (existData)
+      throw new UnprocessableContentException("this role is duplicate!");
 
     return await this._repository.update(newDate);
   }

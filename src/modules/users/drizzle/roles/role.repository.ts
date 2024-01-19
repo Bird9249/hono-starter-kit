@@ -2,7 +2,6 @@ import { and, eq, isNotNull, isNull, not } from "drizzle-orm";
 import { Inject, Service } from "typedi";
 import DrizzleConnection from "../../../../infrastructure/drizzle/connection";
 import Role from "../../domain/entities/role.entity";
-import Name from "../../domain/entities/value-object/name.vo";
 import { IRoleRepository } from "../../domain/repositories/roles/role.interface";
 import { PermissionMapper } from "../mappers/permission.mapper";
 import { RoleMapper } from "../mappers/role.mapper";
@@ -15,16 +14,16 @@ export class RoleDrizzleRepo implements IRoleRepository {
 
   constructor(@Inject() private readonly drizzle: DrizzleConnection) {}
 
-  async create(entity: Role, permissionIds: number[]): Promise<Role> {
+  async create(entity: Role): Promise<Role> {
     const model = this._mapper.toModel(entity);
 
     const query = await this.drizzle.connection.transaction(async (tx) => {
       const roleRes = await tx.insert(roles).values(model).returning();
 
       await tx.insert(rolesToPermissions).values(
-        permissionIds.map((perId) => ({
+        entity.permissions.map((per) => ({
           role_id: roleRes[0].id,
-          permission_id: perId,
+          permission_id: per.id,
         }))
       );
 
@@ -34,43 +33,20 @@ export class RoleDrizzleRepo implements IRoleRepository {
     return this._mapper.toEntity(query[0]);
   }
 
-  async checkDuplicate(
-    name: Name,
-    id?: number | undefined
-  ): Promise<Role | void> {
-    let query = this.drizzle.connection
-      .select()
-      .from(roles)
-      .leftJoin(rolesToPermissions, eq(roles.id, rolesToPermissions.role_id))
-      .innerJoin(
-        permissions,
-        eq(rolesToPermissions.permission_id, permissions.id)
-      );
+  async checkDuplicate(entity: Role): Promise<Role | void> {
+    let query = this.drizzle.connection.select().from(roles);
 
-    if (!id) {
-      query.where(
-        and(eq(roles.name, name.getValue()), isNull(roles.deleted_at))
-      );
-    } else {
-      query.where(
-        and(
-          eq(roles.name, name.getValue()),
-          isNull(roles.deleted_at),
-          not(eq(roles.id, id))
-        )
-      );
-    }
+    query.where(
+      and(
+        eq(roles.name, entity.name.getValue()),
+        isNull(roles.deleted_at),
+        entity.id ? not(eq(roles.id, entity.id)) : undefined
+      )
+    );
 
     const res = await query.execute();
 
-    if (res.length > 0) {
-      const role = this._mapper.toEntity(res[0].roles);
-      role.permissions = res.map((res) =>
-        this._permissionMapper.toEntity(res.permissions)
-      );
-
-      return role;
-    }
+    if (res.length > 0) return this._mapper.toEntity(res[0]);
   }
 
   async getById(id: number): Promise<void | Role> {
@@ -95,7 +71,7 @@ export class RoleDrizzleRepo implements IRoleRepository {
     }
   }
 
-  async update(entity: Role, permissionIds?: number[]): Promise<Role> {
+  async update(entity: Role): Promise<Role> {
     const model = this._mapper.toModel(entity);
 
     const res = await this.drizzle.connection.transaction(async (tx) => {
@@ -105,18 +81,16 @@ export class RoleDrizzleRepo implements IRoleRepository {
         .where(eq(roles.id, entity.id))
         .returning();
 
-      if (permissionIds) {
-        await tx
-          .delete(rolesToPermissions)
-          .where(eq(rolesToPermissions.role_id, roleRes[0].id));
+      await tx
+        .delete(rolesToPermissions)
+        .where(eq(rolesToPermissions.role_id, roleRes[0].id));
 
-        await tx.insert(rolesToPermissions).values(
-          permissionIds.map((perId) => ({
-            role_id: roleRes[0].id,
-            permission_id: perId,
-          }))
-        );
-      }
+      await tx.insert(rolesToPermissions).values(
+        entity.permissions.map((permission) => ({
+          role_id: roleRes[0].id,
+          permission_id: permission.id,
+        }))
+      );
 
       return roleRes;
     });

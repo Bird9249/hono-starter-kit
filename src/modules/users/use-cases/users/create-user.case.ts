@@ -1,4 +1,5 @@
 import { Inject, Service } from "typedi";
+import { UnprocessableContentException } from "../../../../common/exception/http";
 import ICommandHandler from "../../../../common/interfaces/cqrs/command.interface";
 import CreateUserCommand from "../../domain/commands/users/create-user.command";
 import User from "../../domain/entities/user.entity";
@@ -14,8 +15,11 @@ export default class CreateUserCase
   async execute({ dto }: CreateUserCommand): Promise<User> {
     const user = new UserFactories().create(dto);
 
-    const result = await this._repository.create(user);
+    const existData = await this._repository.checkDuplicate(user);
 
-    return result;
+    if (existData)
+      throw new UnprocessableContentException("this user is duplicate!");
+
+    return await this._repository.create(user);
   }
 }
