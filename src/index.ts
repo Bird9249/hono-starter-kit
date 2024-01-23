@@ -1,48 +1,37 @@
 import { Hono } from "hono";
 import "reflect-metadata";
-import Container from "typedi";
 import { HTTPException, ValidationFailed } from "./common/exception/http";
 import AuthRouter from "./modules/users/auth.router";
 import RoleRouter from "./modules/users/role.router";
 import UserRouter from "./modules/users/user.router";
 
-class Application {
-  public readonly hono: Hono = new Hono();
+const app = new Hono()
+  .route("/users", UserRouter)
+  .route("/auth", AuthRouter)
+  .route("/roles", RoleRouter)
+  .onError((err, { json }) => {
+    if (err instanceof ValidationFailed)
+      return json({ message: err.message, error: err.error }, err.status);
 
-  constructor() {
-    const userRouter = Container.get(UserRouter);
-    const authRouter = Container.get(AuthRouter);
-    const roleRouter = Container.get(RoleRouter);
+    if (err instanceof HTTPException)
+      return json(
+        {
+          message: err.message,
+        },
+        err.status
+      );
 
-    this.hono
-      .route("/users", userRouter.router)
-      .route("/auth", authRouter.router)
-      .route("/roles", roleRouter.router)
-      .onError((err, { json }) => {
-        if (err instanceof ValidationFailed)
-          return json({ message: err.message, error: err.error }, err.status);
+    console.log(err);
 
-        if (err instanceof HTTPException)
-          return json(
-            {
-              message: err.message,
-            },
-            err.status
-          );
+    return json(
+      {
+        message: "Internal Server Error!",
+        error: {
+          ...err,
+        },
+      },
+      500
+    );
+  });
 
-        console.log(err);
-
-        return json(
-          {
-            message: "Internal Server Error!",
-            error: {
-              ...err,
-            },
-          },
-          500
-        );
-      });
-  }
-}
-
-export default new Application().hono;
+export default app;

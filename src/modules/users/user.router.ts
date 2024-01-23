@@ -1,12 +1,11 @@
 import { format } from "date-fns";
 import { Hono } from "hono";
 import { validator } from "hono/validator";
-import { Inject, Service } from "typedi";
-import { object, z } from "zod";
-import { ValidationFailed } from "../../common/exception/http";
+import Container from "typedi";
+import { IPaginate } from "../../common/interfaces/pagination/pagination.interface";
+import queryParamMiddleware from "../../common/middlewares/query-param.middleware";
 import { FORMAT_DATE_TIME } from "../../common/settings/format-date-time";
 import zodException from "../../common/utils/zod-exception";
-import PaginateSchema from "../../common/zod-schema/paginate.schema";
 import paramIdSchema from "../../common/zod-schema/param-id.schema";
 import CreateUserCommand from "./domain/commands/users/create-user.command";
 import DeleteUserCommand from "./domain/commands/users/delete-user.command";
@@ -30,197 +29,165 @@ import DeleteUserCase from "./use-cases/users/delete-user.case";
 import RestoreUserCase from "./use-cases/users/restore-user.case";
 import UpdateUserCase from "./use-cases/users/update-user.case";
 
-@Service()
-export default class UserRouter {
-  public readonly router: Hono = new Hono();
+const UserRouter = new Hono();
 
-  constructor(
-    @Inject() private readonly _createUserCase: CreateUserCase,
-    @Inject() private readonly _updateUserCase: UpdateUserCase,
-    @Inject() private readonly _getUserRepo: GetUserDrizzleRepo,
-    @Inject() private readonly _getUserByIdRepo: GetUserByIdDrizzleRepo,
-    @Inject() private readonly _deleteUserCase: DeleteUserCase,
-    @Inject() private readonly _restoreUserCase: RestoreUserCase
-  ) {
-    this._getAll();
-    this._createNew();
-    this._getById();
-    this._update();
-    this._delete();
-    this._restore();
+const createUserCase = Container.get(CreateUserCase);
+const updateUserCase = Container.get(UpdateUserCase);
+const getUserRepo = Container.get(GetUserDrizzleRepo);
+const getUserByIdRepo = Container.get(GetUserByIdDrizzleRepo);
+const deleteUserCase = Container.get(DeleteUserCase);
+const restoreUserCase = Container.get(RestoreUserCase);
+
+const userProperties: (keyof UserSchema)[] = [
+  "username",
+  "email",
+  "created_at",
+  "updated_at",
+];
+
+UserRouter.get(
+  "/",
+  async (c, next) => await queryParamMiddleware(c, next, userProperties),
+  async ({ req, json }) => {
+    const query = req.query() as IPaginate<UserSchema>;
+
+    const { data, total } = await getUserRepo.execute(
+      new GetUserQuery({
+        offset: query.offset,
+        limit: query.limit,
+        column: query.column,
+        sort_order: query.sort_order,
+      })
+    );
+
+    return json(
+      {
+        data: data.map((data) => ({
+          ...data,
+          created_at: data.created_at
+            ? format(data.created_at, FORMAT_DATE_TIME)
+            : undefined,
+          updated_at: data.updated_at
+            ? format(data.updated_at, FORMAT_DATE_TIME)
+            : undefined,
+        })),
+        total,
+      },
+      200
+    );
   }
+)
+  .post(
+    "/",
+    validator("json", (result) => zodException(CreateUserDto, result)),
+    async ({ req, json }) => {
+      const body = req.valid("json") as CreateUserDtoType;
 
-  private _getAll() {
-    this.router.get("/", async ({ req, json }) => {
-      const query = req.query();
-      const userProperties: (keyof UserSchema)[] = [
-        "username",
-        "email",
-        "created_at",
-        "updated_at",
-      ];
+      const result = await createUserCase.execute(new CreateUserCommand(body));
 
-      const result = PaginateSchema.merge(
-        object({
-          column: z.enum(["id", ...userProperties]).nullish(),
-        })
-      ).safeParse(query);
+      return json(
+        {
+          id: result.id,
+          username: result.username.getValue(),
+          email: result.email.getValue(),
+          created_at: result.created_at.getValue(),
+          updated_at: result.updated_at.getValue(),
+        },
+        201
+      );
+    }
+  )
+  .get(
+    "/:id",
+    validator("param", (result) => zodException(paramIdSchema, result)),
+    async ({ req, json }) => {
+      const { id } = req.valid("param");
 
-      if (!result.success) throw new ValidationFailed(result);
-
-      const { data, total } = await this._getUserRepo.execute(
-        new GetUserQuery({
-          offset: result.data.offset as number,
-          limit: result.data.limit as number,
-          column: result.data.column as keyof UserSchema,
-          sort_order: result.data.sort_order,
-        })
+      const result = await getUserByIdRepo.execute(
+        new GetUserByIdQuery(Number(id))
       );
 
       return json(
         {
-          data: data.map((data) => ({
-            ...data,
-            created_at: data.created_at
-              ? format(data.created_at, FORMAT_DATE_TIME)
-              : undefined,
-            updated_at: data.updated_at
-              ? format(data.updated_at, FORMAT_DATE_TIME)
-              : undefined,
-          })),
-          total,
+          ...result,
+          created_at: result.created_at
+            ? format(result.created_at, FORMAT_DATE_TIME)
+            : undefined,
+          updated_at: result.updated_at
+            ? format(result.updated_at, FORMAT_DATE_TIME)
+            : undefined,
         },
         200
       );
-    });
-  }
+    }
+  )
+  .put(
+    "/:id",
+    validator("param", (result) => zodException(paramIdSchema, result)),
+    validator("json", (result) => zodException(UpdateUserDto, result)),
+    async ({ req, json }) => {
+      const body = req.valid("json") as UpdateUserDtoType;
+      const param = req.valid("param");
 
-  private _createNew() {
-    this.router.post(
-      "/",
-      validator("json", (result) => zodException(CreateUserDto, result)),
-      async ({ req, json }) => {
-        const body = req.valid("json") as CreateUserDtoType;
+      const result = await updateUserCase.execute(
+        new UpdateUserCommand(parseInt(param.id), body)
+      );
 
-        const result = await this._createUserCase.execute(
-          new CreateUserCommand(body)
-        );
+      return json(
+        {
+          id: result.id,
+          username: result.username.getValue(),
+          email: result.email.getValue(),
+          created_at: result.created_at.getValue(),
+          updated_at: result.updated_at.getValue(),
+        },
+        200
+      );
+    }
+  )
+  .delete(
+    "/:id",
+    validator("param", (result) => zodException(paramIdSchema, result)),
+    async ({ req, json }) => {
+      const { id } = req.valid("param");
 
-        return json(
-          {
-            id: result.id,
-            username: result.username.getValue(),
-            email: result.email.getValue(),
-            created_at: result.created_at.getValue(),
-            updated_at: result.updated_at.getValue(),
-          },
-          201
-        );
-      }
-    );
-  }
+      const result = await deleteUserCase.execute(
+        new DeleteUserCommand(parseInt(id))
+      );
 
-  private _getById() {
-    this.router.get(
-      "/:id",
-      validator("param", (result) => zodException(paramIdSchema, result)),
-      async ({ req, json }) => {
-        const { id } = req.valid("param");
+      return json(
+        {
+          id: result.id,
+          username: result.username.getValue(),
+          email: result.email.getValue(),
+          created_at: result.created_at.getValue(),
+          updated_at: result.updated_at.getValue(),
+        },
+        200
+      );
+    }
+  )
+  .patch(
+    "/:id/restore",
+    validator("param", (result) => zodException(paramIdSchema, result)),
+    async ({ req, json }) => {
+      const { id } = req.valid("param");
 
-        const result = await this._getUserByIdRepo.execute(
-          new GetUserByIdQuery(Number(id))
-        );
+      const result = await restoreUserCase.execute(
+        new RestoreUserCommand(parseInt(id))
+      );
 
-        return json(
-          {
-            ...result,
-            created_at: result.created_at
-              ? format(result.created_at, FORMAT_DATE_TIME)
-              : undefined,
-            updated_at: result.updated_at
-              ? format(result.updated_at, FORMAT_DATE_TIME)
-              : undefined,
-          },
-          200
-        );
-      }
-    );
-  }
+      return json(
+        {
+          id: result.id,
+          username: result.username.getValue(),
+          email: result.email.getValue(),
+          created_at: result.created_at.getValue(),
+          updated_at: result.updated_at.getValue(),
+        },
+        200
+      );
+    }
+  );
 
-  private _update() {
-    this.router.put(
-      "/:id",
-      validator("param", (result) => zodException(paramIdSchema, result)),
-      validator("json", (result) => zodException(UpdateUserDto, result)),
-      async ({ req, json }) => {
-        const body = req.valid("json") as UpdateUserDtoType;
-        const param = req.valid("param");
-
-        const result = await this._updateUserCase.execute(
-          new UpdateUserCommand(parseInt(param.id), body)
-        );
-
-        return json(
-          {
-            id: result.id,
-            username: result.username.getValue(),
-            email: result.email.getValue(),
-            created_at: result.created_at.getValue(),
-            updated_at: result.updated_at.getValue(),
-          },
-          200
-        );
-      }
-    );
-  }
-
-  private _delete() {
-    this.router.delete(
-      "/:id",
-      validator("param", (result) => zodException(paramIdSchema, result)),
-      async ({ req, json }) => {
-        const { id } = req.valid("param");
-
-        const result = await this._deleteUserCase.execute(
-          new DeleteUserCommand(parseInt(id))
-        );
-
-        return json(
-          {
-            id: result.id,
-            username: result.username.getValue(),
-            email: result.email.getValue(),
-            created_at: result.created_at.getValue(),
-            updated_at: result.updated_at.getValue(),
-          },
-          200
-        );
-      }
-    );
-  }
-
-  private _restore() {
-    this.router.patch(
-      "/:id/restore",
-      validator("param", (result) => zodException(paramIdSchema, result)),
-      async ({ req, json }) => {
-        const { id } = req.valid("param");
-
-        const result = await this._restoreUserCase.execute(
-          new RestoreUserCommand(parseInt(id))
-        );
-
-        return json(
-          {
-            id: result.id,
-            username: result.username.getValue(),
-            email: result.email.getValue(),
-            created_at: result.created_at.getValue(),
-            updated_at: result.updated_at.getValue(),
-          },
-          200
-        );
-      }
-    );
-  }
-}
+export default UserRouter;

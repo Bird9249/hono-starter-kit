@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { validator } from "hono/validator";
-import { Inject, Service } from "typedi";
+import Container from "typedi";
 import { UnauthorizedException } from "../../common/exception/http";
 import authMiddleware from "../../common/middlewares/auth.middleware";
 import refreshTokenMiddleware from "../../common/middlewares/refresh-token.middleware";
@@ -18,104 +18,85 @@ import LoginCase from "./use-cases/auth/login.case";
 import LogoutCase from "./use-cases/auth/logout.case";
 import RefreshTokenCase from "./use-cases/auth/refresh-token.case";
 
-@Service()
-export default class AuthRouter {
-  public readonly router: Hono = new Hono();
+const AuthRouter = new Hono();
 
-  constructor(
-    @Inject() private readonly _loginCase: LoginCase,
-    @Inject() private readonly _logoutCase: LogoutCase,
-    @Inject() private readonly _getUserProfile: GetUserByIdDrizzleRepo,
-    @Inject() private readonly _refreshTokenCase: RefreshTokenCase,
-    @Inject() private readonly _jwt: GenerateJoseJwt
-  ) {
-    this._login();
-    this._logout();
-    this._getProfile();
-    this._refreshToken();
-  }
+const loginCase = Container.get(LoginCase);
+const logoutCase = Container.get(LogoutCase);
+const getUserByIdRepo = Container.get(GetUserByIdDrizzleRepo);
+const refreshTokenCase = Container.get(RefreshTokenCase);
+const jwt = Container.get(GenerateJoseJwt);
 
-  private _login() {
-    this.router.post(
-      "/login",
-      validator("json", (result) => zodException(LoginDto, result)),
-      async (c) => {
-        const body = c.req.valid("json") as LoginDtoType;
+AuthRouter.post(
+  "/login",
+  validator("json", (result) => zodException(LoginDto, result)),
+  async (c) => {
+    const body = c.req.valid("json") as LoginDtoType;
 
-        const { access_token, refresh_token, data } =
-          await this._loginCase.execute(new LoginCommand(body));
+    const { access_token, refresh_token, data } = await loginCase.execute(
+      new LoginCommand(body)
+    );
 
-        setCookie(c, "access_token", access_token, cookieOpts);
-        setCookie(c, "refresh_token", refresh_token, cookieOpts);
+    setCookie(c, "access_token", access_token, cookieOpts);
+    setCookie(c, "refresh_token", refresh_token, cookieOpts);
 
-        return c.json(
-          {
-            id: data.id,
-            username: data.username.getValue(),
-            email: data.email.getValue(),
-            created_at: data.created_at.getValue(),
-            updated_at: data.updated_at.getValue(),
-          },
-          200
-        );
-      }
+    return c.json(
+      {
+        id: data.id,
+        username: data.username.getValue(),
+        email: data.email.getValue(),
+        created_at: data.created_at.getValue(),
+        updated_at: data.updated_at.getValue(),
+      },
+      200
     );
   }
+)
+  .get(
+    "/profile",
+    async (c, next) => await authMiddleware(c, next),
+    async (c) => {
+      const token = getCookie(c, "access_token");
 
-  private _getProfile() {
-    this.router.get(
-      "/profile",
-      async (c, next) => await authMiddleware(c, next),
-      async (c) => {
-        const token = getCookie(c, "access_token");
+      if (!token) throw new UnauthorizedException();
 
-        if (!token) throw new UnauthorizedException();
+      const payload = jwt.decode(token);
 
-        const payload = this._jwt.decode(token);
+      const result = await getUserByIdRepo.execute(
+        new GetUserByIdQuery(Number(payload.sub))
+      );
 
-        const result = await this._getUserProfile.execute(
-          new GetUserByIdQuery(Number(payload.sub))
-        );
+      return c.json(result, 200);
+    }
+  )
+  .get(
+    "/refresh-token",
+    async (c, next) => await refreshTokenMiddleware(c, next),
+    async (c) => {
+      const token = getCookie(c, "refresh_token");
 
-        return c.json(result, 200);
-      }
-    );
-  }
+      if (!token) throw new UnauthorizedException();
 
-  private _refreshToken() {
-    this.router
-      .use(
-        "/refresh-token",
-        async (c, next) => await refreshTokenMiddleware(c, next)
-      )
-      .get("/refresh-token", async (c) => {
-        const token = getCookie(c, "refresh_token");
+      const { access_token, refresh_token, message } =
+        await refreshTokenCase.execute(new RefreshTokenCommand(token));
 
-        if (!token) throw new UnauthorizedException();
+      setCookie(c, "access_token", access_token, cookieOpts);
+      setCookie(c, "refresh_token", refresh_token, cookieOpts);
 
-        const { access_token, refresh_token, message } =
-          await this._refreshTokenCase.execute(new RefreshTokenCommand(token));
+      return c.json({ message }, 200);
+    }
+  )
+  .post(
+    "/logout",
+    async (c, next) => await authMiddleware(c, next),
+    async (c) => {
+      const token = getCookie(c, "access_token");
 
-        setCookie(c, "access_token", access_token, cookieOpts);
-        setCookie(c, "refresh_token", refresh_token, cookieOpts);
+      if (!token) throw new UnauthorizedException();
 
-        return c.json({ message }, 200);
-      });
-  }
+      const result = await logoutCase.execute(new LogoutCommand(token));
 
-  private _logout() {
-    this.router.post(
-      "/logout",
-      async (c, next) => await authMiddleware(c, next),
-      async (c) => {
-        const token = getCookie(c, "access_token");
+      return c.json({ message: result }, 200);
+    }
+  );
 
-        if (!token) throw new UnauthorizedException();
-
-        const result = await this._logoutCase.execute(new LogoutCommand(token));
-
-        return c.json({ message: result }, 200);
-      }
-    );
-  }
-}
+export default AuthRouter;
